@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { useCharacterStore } from '@/src/store';
-import { colors, fontSize, fontWeight, spacing } from '@/src/theme';
+import { colors, pixelFont, pixelSize, spacing } from '@/src/theme';
 
 const MIN_SPLASH_MS = 900;
 
@@ -21,10 +21,10 @@ export default function Splash() {
     if (!hydrated) return;
 
     const timer = setTimeout(() => {
-      const character = useCharacterStore.getState().character;
+      const { character, justDied } = useCharacterStore.getState();
       if (!character) {
-        router.replace('/home');
-      } else if (!character.challengeId || !character.difficultyId) {
+        router.replace(justDied ? '/death' : '/home');
+      } else if (!character.challengeId) {
         router.replace('/select-challenge');
       } else {
         router.replace('/(app)/dashboard');
@@ -36,7 +36,7 @@ export default function Splash() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>RunFall</Text>
+      <Text style={styles.title}>RUNFALL</Text>
       <ActivityIndicator color={colors.accent} style={styles.spinner} />
     </View>
   );
@@ -52,9 +52,11 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
-    fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 1,
+    fontFamily: pixelFont,
+    fontSize: pixelSize.xl,
+    textShadowColor: colors.accent,
+    textShadowOffset: { width: 3, height: 3 },
+    textShadowRadius: 1,
   },
   spinner: {
     marginTop: spacing.md,

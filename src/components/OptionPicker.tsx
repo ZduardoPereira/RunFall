@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, fontSize, fontWeight, radius, spacing } from '@/src/theme';
+import { colors, fontSize, fontWeight, pixelFont, pixelSize, radius, spacing } from '@/src/theme';
 
 interface OptionPickerProps {
   label: string;
@@ -39,7 +39,8 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.textSecondary,
-    fontSize: fontSize.sm,
+    fontFamily: pixelFont,
+    fontSize: pixelSize.xs,
   },
   row: {
     flexDirection: 'row',
@@ -47,7 +48,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: colors.surfaceAlt,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

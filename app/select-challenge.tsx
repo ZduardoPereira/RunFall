@@ -1,10 +1,9 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { Button, Card, ScreenContainer } from '@/src/components';
+import { Button, ChoiceCard, Heading, ScreenContainer } from '@/src/components';
 import { CHALLENGES } from '@/src/constants/challenges';
-import { colors, fontSize, fontWeight, spacing } from '@/src/theme';
+import { colors } from '@/src/theme';
 
 export default function SelectChallenge() {
   const router = useRouter();
@@ -17,48 +16,24 @@ export default function SelectChallenge() {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Escolha um desafio</Text>
-      <Text style={styles.subtitle}>A duração do desafio define quanto tempo seu personagem precisa sobreviver.</Text>
+      <Heading
+        title="Escolha um desafio"
+        subtitle="A duração do desafio define quanto tempo seu personagem precisa sobreviver."
+      />
 
       {CHALLENGES.map((challenge) => (
-        <Pressable key={challenge.id} onPress={() => setSelected(challenge.id)}>
-          <Card style={[styles.card, selected === challenge.id && styles.cardSelected]}>
-            <Text style={styles.cardTitle}>{challenge.name}</Text>
-            <Text style={styles.cardDescription}>{challenge.description}</Text>
-          </Card>
-        </Pressable>
+        <ChoiceCard
+          key={challenge.id}
+          title={challenge.name}
+          description={challenge.description}
+          tag={challenge.lengthDays === 'infinite' ? 'Sem fim' : `${challenge.lengthDays}d`}
+          accent={challenge.lengthDays === 'infinite' ? colors.danger : colors.accent}
+          selected={selected === challenge.id}
+          onPress={() => setSelected(challenge.id)}
+        />
       ))}
 
       <Button label="Continuar" onPress={handleContinue} disabled={!selected} />
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  title: {
-    color: colors.textPrimary,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    marginBottom: spacing.xl,
-  },
-  card: {
-    marginBottom: spacing.md,
-  },
-  cardSelected: {
-    borderColor: colors.accent,
-  },
-  cardTitle: {
-    color: colors.textPrimary,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-  },
-  cardDescription: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-  },
-});

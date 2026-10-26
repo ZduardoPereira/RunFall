@@ -1,120 +1,139 @@
 import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Button, Card, ProgressBar, ScreenContainer } from '@/src/components';
-import { ACHIEVEMENT_DEFS } from '@/src/constants/achievements';
+import { Avatar, Button, Card, GoldBadge, PixelText, ProgressBar, ScreenContainer } from '@/src/components';
 import { CHALLENGES } from '@/src/constants/challenges';
-import { DIFFICULTIES } from '@/src/constants/difficulties';
+import { difficultyOf } from '@/src/constants/difficulties';
 import { xpProgressWithinLevel } from '@/src/constants/xp';
-import { useAchievementStore, useCharacterStore } from '@/src/store';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/src/theme';
+import { useCharacterStore } from '@/src/store';
+import { colors, fontSize, pixelFont, pixelSize, radius, spacing } from '@/src/theme';
 
-const MENU: { label: string; href: Href }[] = [
-  { label: 'Missões', href: '/(app)/missions' },
-  { label: 'Calendário', href: '/(app)/calendar' },
-  { label: 'Evolução', href: '/(app)/evolution' },
+const MENU: { label: string; href: Href; color?: string }[] = [
+  { label: 'Missões', href: '/(app)/missions', color: colors.accent },
+  { label: 'Loja', href: '/(app)/shop', color: colors.gold },
   { label: 'Personagem', href: '/(app)/character' },
+  { label: 'Evolução', href: '/(app)/evolution' },
+  { label: 'Calendário', href: '/(app)/calendar' },
   { label: 'Conquistas', href: '/(app)/achievements' },
   { label: 'Histórico', href: '/(app)/history' },
   { label: 'Cemitério', href: '/cemetery' },
-  { label: 'Configurações', href: '/(app)/settings' },
+  { label: 'Ajustes', href: '/(app)/settings' },
 ];
 
 export default function Dashboard() {
   const router = useRouter();
   const character = useCharacterStore((s) => s.character);
-  const ensureTodayMissions = useCharacterStore((s) => s.ensureTodayMissions);
-  const unlockedAchievements = useAchievementStore((s) => s.unlocked);
-
-  useEffect(() => {
-    ensureTodayMissions();
-  }, [ensureTodayMissions]);
 
   if (!character) return null;
 
   const xpProgress = xpProgressWithinLevel(character.xp, character.level);
   const challenge = CHALLENGES.find((c) => c.id === character.challengeId);
-  const difficulty = DIFFICULTIES.find((d) => d.id === character.difficultyId);
-  const unlockedList = ACHIEVEMENT_DEFS.filter((def) => unlockedAchievements[def.id]);
+  const difficulty = difficultyOf(character.difficultyId);
+  const missions = character.todayMissions;
+  const resolved = missions.filter((m) => m.completed || m.failed).length;
+  const lowHp = character.hp <= character.maxHp * 0.3;
 
   return (
     <ScreenContainer>
-      <Text style={styles.name}>{character.name}</Text>
-      <Text style={styles.meta}>
-        Nível {character.level} · {challenge?.name ?? 'Sem desafio'} · {difficulty?.label ?? '—'}
-      </Text>
+      <View style={styles.header}>
+        <Avatar appearance={character.appearance} size={96} animated framed />
+        <View style={styles.headerInfo}>
+          <Text style={styles.name} numberOfLines={1}>
+            {character.name}
+          </Text>
+          <Text style={styles.meta}>
+            Nível {character.level} · {character.routineMode === 'manual' ? 'Rotina própria' : difficulty.label}
+          </Text>
+          <GoldBadge amount={character.gold} />
+        </View>
+      </View>
 
-      <Card style={styles.statsCard}>
-        <ProgressBar label="HP" value={character.hp} max={character.maxHp} color={colors.danger} />
-        <ProgressBar label="Energia" value={character.energy} max={character.maxEnergy} color={colors.accent} />
+      <Card style={styles.block}>
+        <ProgressBar label="HP" value={character.hp} max={character.maxHp} color={colors.hp} />
         <ProgressBar
-          label={`XP (Nível ${character.level})`}
+          label={`XP · Nv ${character.level}`}
           value={xpProgress.current}
           max={xpProgress.needed}
-          color={colors.success}
+          color={colors.xp}
         />
+        {lowHp ? <Text style={styles.warning}>HP baixo! Um dia perfeito recupera 10 HP.</Text> : null}
       </Card>
 
       {character.challengeCompleted ? (
-        <Card style={styles.completeCard}>
-          <Text style={styles.completeTitle}>Desafio concluído!</Text>
-          <Text style={styles.completeText}>
-            Você completou "{challenge?.name ?? 'o desafio'}" em {character.challengeDayCount} dias.
+        <Card style={[styles.block, styles.completeCard]}>
+          <PixelText style={styles.completeTitle}>Desafio concluído!</PixelText>
+          <Text style={styles.body}>
+            Você completou &quot;{challenge?.name ?? 'o desafio'}&quot; em {character.challengeDayCount} dias. Gaste
+            seu ouro na loja e comece o próximo.
           </Text>
-          {unlockedList.length > 0 ? (
-            <View style={styles.achievementList}>
-              <Text style={styles.sectionTitle}>Conquistas</Text>
-              {unlockedList.map((def) => (
-                <Text key={def.id} style={styles.achievementRow}>
-                  • {def.title}
-                </Text>
-              ))}
-            </View>
+          <Button label="Novo desafio" variant="success" onPress={() => router.push('/select-challenge')} />
+        </Card>
+      ) : (
+        <>
+          {challenge ? (
+            <Card style={styles.block}>
+              {challenge.lengthDays === 'infinite' ? (
+                <PixelText>Dia {character.challengeDayCount + 1} · Sem fim</PixelText>
+              ) : (
+                <ProgressBar
+                  label={`Desafio ${challenge.name}`}
+                  value={character.challengeDayCount}
+                  max={challenge.lengthDays}
+                  color={colors.accent}
+                />
+              )}
+            </Card>
           ) : null}
-          <Button label="Começar novo desafio" onPress={() => router.push('/select-challenge')} />
-        </Card>
-      ) : challenge ? (
-        <Card style={styles.progressCard}>
-          {challenge.lengthDays === 'infinite' ? (
-            <Text style={styles.progressLabel}>Dia {character.challengeDayCount} · Hardcore (sem fim)</Text>
-          ) : (
-            <>
-              <Text style={styles.progressLabel}>
-                Dia {character.challengeDayCount} de {challenge.lengthDays}
+
+          <Pressable onPress={() => router.push('/(app)/missions')}>
+            <Card style={[styles.block, styles.todayCard]}>
+              <View style={styles.todayHeader}>
+                <PixelText>Missões de hoje</PixelText>
+                <PixelText style={styles.todayCount}>
+                  {resolved}/{missions.length}
+                </PixelText>
+              </View>
+              <View style={styles.pips}>
+                {missions.map((m) => (
+                  <View
+                    key={m.id}
+                    style={[
+                      styles.pip,
+                      m.completed && { backgroundColor: colors.success },
+                      m.failed && { backgroundColor: colors.danger },
+                    ]}
+                  />
+                ))}
+              </View>
+              <Text style={styles.body}>
+                {resolved === missions.length && missions.length > 0
+                  ? 'Tudo resolvido. O dia fecha sozinho à meia-noite.'
+                  : 'O que ficar pendente à meia-noite conta como falha.'}
               </Text>
-              <ProgressBar
-                label="Progresso do desafio"
-                value={character.challengeDayCount}
-                max={challenge.lengthDays}
-                color={colors.accent}
-              />
-            </>
-          )}
-        </Card>
-      ) : null}
+            </Card>
+          </Pressable>
+        </>
+      )}
 
       <View style={styles.row}>
-        <Card style={styles.smallStat}>
-          <Text style={styles.smallStatValue}>{character.daysSurvived}</Text>
-          <Text style={styles.smallStatLabel}>Dias vivos</Text>
-        </Card>
-        <Card style={styles.smallStat}>
-          <Text style={styles.smallStatValue}>{character.streak}</Text>
-          <Text style={styles.smallStatLabel}>Sequência</Text>
-        </Card>
-        <Card style={styles.smallStat}>
-          <Text style={styles.smallStatValue}>{character.missionsCompleted}</Text>
-          <Text style={styles.smallStatLabel}>Concluídas</Text>
-        </Card>
+        <Stat value={character.daysSurvived} label="Dias vivos" />
+        <Stat value={character.streak} label="Sequência" />
+        <Stat value={character.bestStreak} label="Recorde" />
       </View>
 
-      <Text style={styles.sectionTitle}>Menu</Text>
       <View style={styles.menuGrid}>
         {MENU.map((item) => (
-          <Pressable key={item.label} style={styles.menuItem} onPress={() => router.push(item.href)}>
-            <Text style={styles.menuLabel}>{item.label}</Text>
+          <Pressable
+            key={item.label}
+            style={({ pressed }) => [
+              styles.menuItem,
+              item.color && { borderColor: item.color },
+              pressed && styles.menuItemPressed,
+            ]}
+            onPress={() => router.push(item.href)}
+          >
+            <Text style={[styles.menuLabel, item.color && { color: item.color }]}>{item.label}</Text>
           </Pressable>
         ))}
       </View>
@@ -122,89 +141,118 @@ export default function Dashboard() {
   );
 }
 
+function Stat({ value, label }: { value: number; label: string }) {
+  return (
+    <Card style={styles.stat}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </Card>
+  );
+}
+
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  headerInfo: {
+    flex: 1,
+    gap: spacing.sm,
+  },
   name: {
     color: colors.textPrimary,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
+    fontFamily: pixelFont,
+    fontSize: pixelSize.lg,
+    lineHeight: 22,
   },
   meta: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
-    marginBottom: spacing.xl,
   },
-  statsCard: {
+  block: {
     marginBottom: spacing.lg,
   },
-  progressCard: {
-    marginBottom: spacing.lg,
-  },
-  progressLabel: {
-    color: colors.textPrimary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
+  warning: {
+    color: colors.danger,
+    fontSize: fontSize.xs,
   },
   completeCard: {
-    marginBottom: spacing.lg,
     borderColor: colors.success,
   },
   completeTitle: {
     color: colors.success,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
   },
-  completeText: {
+  body: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
   },
-  achievementList: {
+  todayCard: {
+    borderColor: colors.accent,
+  },
+  todayHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  todayCount: {
+    color: colors.accent,
+  },
+  pips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.xs,
   },
-  achievementRow: {
-    color: colors.textPrimary,
-    fontSize: fontSize.sm,
+  pip: {
+    width: 18,
+    height: 18,
+    borderRadius: radius.sm,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
   },
   row: {
     flexDirection: 'row',
     gap: spacing.md,
     marginBottom: spacing.xl,
   },
-  smallStat: {
+  stat: {
     flex: 1,
     alignItems: 'center',
+    paddingHorizontal: spacing.xs,
+    gap: spacing.sm,
   },
-  smallStatValue: {
+  statValue: {
     color: colors.textPrimary,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: pixelFont,
+    fontSize: pixelSize.lg,
   },
-  smallStatLabel: {
+  statLabel: {
     color: colors.textMuted,
     fontSize: fontSize.xs,
-  },
-  sectionTitle: {
-    color: colors.textPrimary,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-    marginBottom: spacing.md,
   },
   menuGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   menuItem: {
-    width: '47%',
+    width: '31.5%',
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: 2,
+    borderBottomWidth: 4,
     borderColor: colors.border,
     borderRadius: radius.lg,
     paddingVertical: spacing.lg,
     alignItems: 'center',
   },
+  menuItemPressed: {
+    borderBottomWidth: 2,
+    marginTop: 2,
+  },
   menuLabel: {
     color: colors.textPrimary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
+    fontFamily: pixelFont,
+    fontSize: pixelSize.xs,
   },
 });

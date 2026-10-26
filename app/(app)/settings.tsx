@@ -1,36 +1,32 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput } from 'react-native';
 
-import { Button, Card, ScreenContainer } from '@/src/components';
+import { Button, Card, Heading, PixelText, ScreenContainer } from '@/src/components';
 import { useCharacterStore } from '@/src/store';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/src/theme';
+import { colors, fontSize, radius, spacing } from '@/src/theme';
 
 const PLANNED_SETTINGS = ['Notificações diárias', 'Sons e vibração', 'Exportar dados', 'Sobre o RunFall'];
 
+/** Time travel for testing: moves the app's clock forward and closes the days
+ * exactly as midnight would. Death is handled by the (app) layout redirect. */
 function DevTools() {
-  const router = useRouter();
-  const skipDays = useCharacterStore((s) => s.skipDays);
+  const devAdvanceDays = useCharacterStore((s) => s.devAdvanceDays);
+  const dayOffset = useCharacterStore((s) => s.dayOffset);
   const [customDays, setCustomDays] = useState('1');
   const [lastResult, setLastResult] = useState<string | null>(null);
 
-  const runSkip = (n: number) => {
-    const result = skipDays(n);
-    if (result.died) {
-      router.replace('/death');
-      return;
-    }
-    setLastResult(`Avançou ${result.daysAdvanced} dia(s).`);
+  const run = (n: number, completePending: boolean) => {
+    const result = devAdvanceDays(n, completePending);
+    if (!result.died) setLastResult(`Avançou ${result.daysAdvanced} dia(s).`);
   };
 
   return (
     <Card style={styles.card}>
-      <Text style={styles.label}>Ferramentas de teste</Text>
-      <Text style={styles.hint}>
-        Resolve as missões pendentes de hoje (falhando as que não foram concluídas) e avança o dia.
-      </Text>
-      <Button label="Pular 1 dia" variant="secondary" onPress={() => runSkip(1)} />
-      <Button label="Pular 7 dias (1 semana)" variant="secondary" onPress={() => runSkip(7)} />
+      <PixelText>Ferramentas de teste</PixelText>
+      <Text style={styles.hint}>Relógio do app adiantado em {dayOffset} dia(s).</Text>
+      <Button label="+1 dia concluindo tudo" variant="secondary" onPress={() => run(1, true)} />
+      <Button label="+1 dia falhando pendentes" variant="secondary" onPress={() => run(1, false)} />
+      <Button label="+7 dias concluindo tudo" variant="secondary" onPress={() => run(7, true)} />
       <TextInput
         value={customDays}
         onChangeText={setCustomDays}
@@ -39,7 +35,11 @@ function DevTools() {
         placeholderTextColor={colors.textMuted}
         style={styles.input}
       />
-      <Button label="Pular N dias" variant="secondary" onPress={() => runSkip(Math.max(1, parseInt(customDays, 10) || 1))} />
+      <Button
+        label="+N dias concluindo tudo"
+        variant="secondary"
+        onPress={() => run(Math.max(1, parseInt(customDays, 10) || 1), true)}
+      />
       {lastResult ? <Text style={styles.hint}>{lastResult}</Text> : null}
     </Card>
   );
@@ -48,10 +48,11 @@ function DevTools() {
 export default function Settings() {
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Configurações</Text>
+      <Heading title="Ajustes" />
       {PLANNED_SETTINGS.map((label) => (
         <Card key={label} style={styles.card}>
           <Text style={styles.label}>{label}</Text>
+          <Text style={styles.soon}>Em breve</Text>
         </Card>
       ))}
 
@@ -61,19 +62,17 @@ export default function Settings() {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    color: colors.textPrimary,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    marginBottom: spacing.xl,
-  },
   card: {
     marginBottom: spacing.md,
   },
   label: {
     color: colors.textPrimary,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontWeight: '600',
+  },
+  soon: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
   },
   hint: {
     color: colors.textSecondary,
@@ -82,7 +81,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

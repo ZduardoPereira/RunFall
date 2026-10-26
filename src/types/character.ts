@@ -1,4 +1,5 @@
 import type { DayRecord } from './dayRecord';
+import type { DifficultyId } from './difficulty';
 import type { Mission, MissionTemplate } from './mission';
 
 export type Gender = 'male' | 'female' | 'unspecified';
@@ -15,6 +16,8 @@ export interface CharacterAppearance {
   expression: string;
 }
 
+export type RoutineMode = 'preset' | 'manual';
+
 export interface Character {
   id: string;
   name: string;
@@ -23,8 +26,6 @@ export interface Character {
 
   hp: number;
   maxHp: number;
-  energy: number;
-  maxEnergy: number;
   xp: number;
   level: number;
 
@@ -32,17 +33,19 @@ export interface Character {
   missionsCompleted: number;
   missionsFailed: number;
   streak: number;
+  bestStreak: number;
 
   challengeId: string | null;
-  difficultyId: string | null;
+  difficultyId: DifficultyId | null;
+  routineMode: RoutineMode;
   challengeDayCount: number;
   challengeCompleted: boolean;
 
   gold: number;
-  attributePoints: number;
 
   missionTemplates: MissionTemplate[];
   todayMissions: Mission[];
+  /** Day key (YYYY-MM-DD, local time) that `todayMissions` belongs to. */
   lastMissionDate: string | null;
   dayHistory: DayRecord[];
 

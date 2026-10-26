@@ -8,9 +8,10 @@ export const spacing = {
   xxxl: 48,
 } as const;
 
+/** Kept small on purpose: square-ish corners suit the pixel-art look. */
 export const radius = {
-  sm: 6,
-  md: 10,
-  lg: 16,
+  sm: 4,
+  md: 6,
+  lg: 8,
   full: 999,
 } as const;

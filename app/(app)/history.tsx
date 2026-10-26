@@ -1,39 +1,68 @@
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { Card, ScreenContainer } from '@/src/components';
+import { Card, Heading, ScreenContainer } from '@/src/components';
 import { useCharacterStore } from '@/src/store';
-import { colors, fontSize, fontWeight, spacing } from '@/src/theme';
+import { colors, fontSize, pixelFont, pixelSize, spacing } from '@/src/theme';
+import { formatDayKey } from '@/src/utils/date';
 
 export default function History() {
   const character = useCharacterStore((s) => s.character);
   if (!character) return null;
 
+  const days = [...character.dayHistory].reverse();
+
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Histórico</Text>
-      <Card>
-        <Text style={styles.stat}>Missões concluídas: {character.missionsCompleted}</Text>
-        <Text style={styles.stat}>Missões falhadas: {character.missionsFailed}</Text>
-      </Card>
-      <Text style={styles.note}>Um registro dia a dia detalhado é um próximo passo.</Text>
+      <Heading
+        title="Histórico"
+        subtitle={`${character.missionsCompleted} missões concluídas · ${character.missionsFailed} falhadas`}
+      />
+
+      {days.length === 0 ? <Text style={styles.note}>Nenhum dia encerrado ainda.</Text> : null}
+
+      {days.map((day, index) => (
+        <Card key={`${day.date}-${index}`} style={[styles.card, { borderLeftColor: day.perfect ? colors.success : colors.danger }]}>
+          <View style={styles.header}>
+            <Text style={styles.date}>{formatDayKey(day.date)}</Text>
+            <Text style={[styles.badge, { color: day.perfect ? colors.success : colors.danger }]}>
+              {day.perfect ? 'Perfeito' : `-${day.hpLoss} HP`}
+            </Text>
+          </View>
+          <Text style={styles.body}>
+            {day.missionsCompleted}/{day.missionsTotal} concluídas
+            {day.missionsFailed > 0 ? ` · ${day.missionsFailed} falhadas` : ''}
+          </Text>
+        </Card>
+      ))}
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  title: {
-    color: colors.textPrimary,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    marginBottom: spacing.xl,
-  },
-  stat: {
-    color: colors.textPrimary,
-    fontSize: fontSize.md,
-  },
   note: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
-    marginTop: spacing.xl,
+  },
+  card: {
+    borderLeftWidth: 6,
+    marginBottom: spacing.sm,
+    gap: spacing.xs,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  date: {
+    color: colors.textPrimary,
+    fontFamily: pixelFont,
+    fontSize: pixelSize.xs,
+  },
+  badge: {
+    fontFamily: pixelFont,
+    fontSize: pixelSize.xs,
+  },
+  body: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
   },
 });

@@ -1,6 +1,11 @@
+export { Avatar, Tombstone } from './Avatar';
 export { Button } from './Button';
 export { Card } from './Card';
+export { ChoiceCard } from './ChoiceCard';
+export { GoldBadge } from './GoldBadge';
+export { Heading, PixelText } from './Heading';
 export { MissionTemplateEditor } from './MissionTemplateEditor';
 export { OptionPicker } from './OptionPicker';
+export { PixelSprite } from './PixelSprite';
 export { ProgressBar } from './ProgressBar';
 export { ScreenContainer } from './ScreenContainer';

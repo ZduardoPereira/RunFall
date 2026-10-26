@@ -1,29 +1,36 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, fontSize, fontWeight, radius, spacing } from '@/src/theme';
+import { colors, pixelFont, pixelSize, radius, spacing } from '@/src/theme';
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger';
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'gold';
 
 interface ButtonProps {
   label: string;
   onPress: () => void;
   variant?: ButtonVariant;
   disabled?: boolean;
+  compact?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
-export function Button({ label, onPress, variant = 'primary', disabled = false }: ButtonProps) {
+/** Chunky arcade-style button: the darker bottom edge "sinks" when pressed. */
+export function Button({ label, onPress, variant = 'primary', disabled = false, compact = false, style }: ButtonProps) {
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
       style={({ pressed }) => [
         styles.base,
+        compact && styles.compact,
         variantStyles[variant],
         disabled && styles.disabled,
         pressed && !disabled && styles.pressed,
+        style,
       ]}
     >
-      <Text style={[styles.label, variant === 'secondary' && styles.labelSecondary]}>{label}</Text>
+      <Text style={[styles.label, compact && styles.labelCompact, variant === 'gold' && styles.labelDark]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -31,37 +38,60 @@ export function Button({ label, onPress, variant = 'primary', disabled = false }
 const styles = StyleSheet.create({
   base: {
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
+    borderBottomWidth: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  compact: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderBottomWidth: 3,
+  },
   pressed: {
-    opacity: 0.8,
+    borderBottomWidth: 1,
+    marginTop: 3,
   },
   disabled: {
     opacity: 0.4,
   },
   label: {
     color: colors.textPrimary,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontFamily: pixelFont,
+    fontSize: pixelSize.sm,
+    lineHeight: 16,
+    textAlign: 'center',
   },
-  labelSecondary: {
-    color: colors.textPrimary,
+  labelCompact: {
+    fontSize: pixelSize.xs,
+  },
+  labelDark: {
+    color: colors.background,
   },
 });
 
 const variantStyles = StyleSheet.create({
   primary: {
     backgroundColor: colors.accent,
+    borderBottomColor: colors.accentDark,
   },
   secondary: {
     backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
+    borderBottomColor: colors.border,
+    borderWidth: 2,
     borderColor: colors.border,
   },
   danger: {
     backgroundColor: colors.danger,
+    borderBottomColor: colors.dangerDark,
+  },
+  success: {
+    backgroundColor: colors.successDark,
+    borderBottomColor: '#17734B',
+  },
+  gold: {
+    backgroundColor: colors.gold,
+    borderBottomColor: colors.goldDark,
   },
 });

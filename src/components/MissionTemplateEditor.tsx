@@ -5,15 +5,12 @@ import { Button } from '@/src/components/Button';
 import { Card } from '@/src/components/Card';
 import { OptionPicker } from '@/src/components/OptionPicker';
 import { TIER_LABEL } from '@/src/constants/missionPresets';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/src/theme';
+import { colors, fontSize, fontWeight, pixelFont, pixelSize, radius, spacing, tierColors } from '@/src/theme';
 import type { MissionTemplate, MissionTier } from '@/src/types';
+import { makeId } from '@/src/utils/date';
 
 const TIER_ORDER: MissionTier[] = ['simple', 'medium', 'hard', 'death'];
 const TIER_LABELS = TIER_ORDER.map((tier) => TIER_LABEL[tier]);
-
-function makeId() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
 
 interface MissionTemplateEditorProps {
   templates: MissionTemplate[];
@@ -60,11 +57,17 @@ export function MissionTemplateEditor({ templates, onAdd, onUpdate, onRemove }: 
     <View style={styles.wrapper}>
       {templates.map((template) => (
         <Pressable key={template.id} onPress={() => onUpdate && startEdit(template)} disabled={!onUpdate}>
-          <Card style={[styles.item, editingId === template.id && styles.itemEditing]}>
+          <Card
+            style={[
+              styles.item,
+              { borderLeftColor: tierColors[template.tier] },
+              editingId === template.id && styles.itemEditing,
+            ]}
+          >
             <View style={styles.itemInfo}>
               <Text style={styles.itemTitle}>{template.title}</Text>
               {template.description ? <Text style={styles.itemDescription}>{template.description}</Text> : null}
-              <Text style={styles.itemTier}>{TIER_LABEL[template.tier]}</Text>
+              <Text style={[styles.itemTier, { color: tierColors[template.tier] }]}>{TIER_LABEL[template.tier]}</Text>
             </View>
             {onRemove ? (
               <Pressable onPress={() => onRemove(template.id)} hitSlop={8}>
@@ -112,6 +115,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   item: {
+    borderLeftWidth: 6,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -134,13 +138,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
   },
   itemTier: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-    textTransform: 'uppercase',
+    fontFamily: pixelFont,
+    fontSize: pixelSize.xs,
   },
   remove: {
     color: colors.danger,
-    fontSize: fontSize.sm,
+    fontFamily: pixelFont,
+    fontSize: pixelSize.xs,
   },
   form: {
     gap: spacing.md,

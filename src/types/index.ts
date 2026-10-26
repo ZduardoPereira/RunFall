@@ -5,3 +5,4 @@ export * from './difficulty';
 export * from './achievement';
 export * from './cemetery';
 export * from './dayRecord';
+export * from './cosmetic';

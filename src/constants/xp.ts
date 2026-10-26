@@ -1,3 +1,6 @@
+import { difficultyOf } from '@/src/constants/difficulties';
+import type { DifficultyId, MissionTier } from '@/src/types';
+
 const EARLY_LEVEL_THRESHOLDS: Record<number, number> = {
   1: 0,
   2: 100,
@@ -45,9 +48,14 @@ export const MISSION_GOLD = {
   death: 25,
 } as const;
 
+/** Bonuses granted when a day closes. `fullDay` and `fullWeek` require a
+ * perfect day (no failed missions); `fullWeek` fires every 7-day streak. */
 export const BONUS_XP = {
   fullDay: 50,
   fullWeek: 250,
   challengeComplete: 1000,
-  firstChallengeComplete: 500,
 } as const;
+
+export function missionXpFor(tier: MissionTier, difficultyId: DifficultyId | null) {
+  return Math.round(MISSION_XP[tier] * difficultyOf(difficultyId).xpMultiplier);
+}

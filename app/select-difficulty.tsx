@@ -1,72 +1,57 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { Button, Card, ScreenContainer } from '@/src/components';
+import { Button, ChoiceCard, Heading, ScreenContainer } from '@/src/components';
 import { DIFFICULTIES } from '@/src/constants/difficulties';
 import { generateMissionsForDifficulty } from '@/src/constants/missionPresets';
 import { useCharacterStore } from '@/src/store';
-import { colors, fontSize, fontWeight, spacing } from '@/src/theme';
+import { tierColors } from '@/src/theme';
 import type { DifficultyId } from '@/src/types';
+
+const DIFFICULTY_ACCENT: Record<DifficultyId, string> = {
+  easy: tierColors.simple,
+  medium: tierColors.medium,
+  hard: tierColors.hard,
+  hardcore: tierColors.death,
+};
 
 export default function SelectDifficulty() {
   const router = useRouter();
   const { challengeId } = useLocalSearchParams<{ challengeId: string }>();
-  const setChallengeAndDifficulty = useCharacterStore((s) => s.setChallengeAndDifficulty);
-  const setMissionTemplates = useCharacterStore((s) => s.setMissionTemplates);
+  const startChallenge = useCharacterStore((s) => s.startChallenge);
   const [selected, setSelected] = useState<DifficultyId | null>(null);
 
   const handleContinue = () => {
     if (!selected || !challengeId) return;
-    setMissionTemplates(generateMissionsForDifficulty(selected));
-    setChallengeAndDifficulty(challengeId, selected);
-    router.replace('/(app)/dashboard');
+    startChallenge({
+      challengeId,
+      difficultyId: selected,
+      routineMode: 'preset',
+      templates: generateMissionsForDifficulty(selected),
+    });
+    router.dismissTo('/(app)/dashboard');
   };
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Escolha a dificuldade</Text>
-      <Text style={styles.subtitle}>A dificuldade define quantas missões você recebe e quanto uma falha custa.</Text>
+      <Heading
+        title="Dificuldade"
+        subtitle="A dificuldade define quantas missões você recebe, quanto XP ganha e quanto uma falha custa."
+      />
 
       {DIFFICULTIES.map((difficulty) => (
-        <Pressable key={difficulty.id} onPress={() => setSelected(difficulty.id)}>
-          <Card style={[styles.card, selected === difficulty.id && styles.cardSelected]}>
-            <Text style={styles.cardTitle}>{difficulty.label}</Text>
-            <Text style={styles.cardDescription}>{difficulty.description}</Text>
-          </Card>
-        </Pressable>
+        <ChoiceCard
+          key={difficulty.id}
+          title={difficulty.label}
+          description={difficulty.description}
+          tag={`x${difficulty.xpMultiplier} XP`}
+          accent={DIFFICULTY_ACCENT[difficulty.id]}
+          selected={selected === difficulty.id}
+          onPress={() => setSelected(difficulty.id)}
+        />
       ))}
 
       <Button label="Começar" onPress={handleContinue} disabled={!selected} />
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  title: {
-    color: colors.textPrimary,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    marginBottom: spacing.xl,
-  },
-  card: {
-    marginBottom: spacing.md,
-  },
-  cardSelected: {
-    borderColor: colors.accent,
-  },
-  cardTitle: {
-    color: colors.textPrimary,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-  },
-  cardDescription: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-  },
-});

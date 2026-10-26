@@ -22,3 +22,15 @@ export const lineHeight = {
   xl: 34,
   xxl: 42,
 } as const;
+
+/** Pixel font loaded in the root layout. It runs wide, so it uses its own
+ * smaller scale and is reserved for titles, labels and numbers. */
+export const pixelFont = 'PressStart2P_400Regular';
+
+export const pixelSize = {
+  xs: 8,
+  sm: 10,
+  md: 12,
+  lg: 16,
+  xl: 22,
+} as const;

@@ -2,10 +2,10 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Button, Card, OptionPicker, ScreenContainer } from '@/src/components';
+import { Avatar, Button, Card, OptionPicker, PixelText, ScreenContainer } from '@/src/components';
 import { APPEARANCE_OPTIONS, DEFAULT_APPEARANCE } from '@/src/constants/appearance';
 import { useCemeteryStore, useCharacterStore } from '@/src/store';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/src/theme';
+import { colors, fontSize, pixelFont, pixelSize, radius, spacing } from '@/src/theme';
 import type { CharacterAppearance, Gender } from '@/src/types';
 
 const GENDERS: { id: Gender; label: string }[] = [
@@ -13,6 +13,11 @@ const GENDERS: { id: Gender; label: string }[] = [
   { id: 'female', label: 'Feminino' },
   { id: 'unspecified', label: 'Não informar' },
 ];
+
+const BEARD_OPTIONS = ['Sem barba', 'Com barba'] as const;
+
+// The preview shows the bare character; shop cosmetics come later.
+const NO_COSMETICS = {};
 
 export default function CreateCharacter() {
   const router = useRouter();
@@ -26,6 +31,22 @@ export default function CreateCharacter() {
 
   const updateAppearance = <K extends keyof CharacterAppearance>(key: K, value: CharacterAppearance[K]) =>
     setAppearance((prev) => ({ ...prev, [key]: value }));
+
+  const randomize = () => {
+    const pick = <T,>(list: readonly T[]) => list[Math.floor(Math.random() * list.length)];
+    const accessory = pick(APPEARANCE_OPTIONS.accessory);
+    setAppearance({
+      hairStyle: pick(APPEARANCE_OPTIONS.hairStyle),
+      hairColor: pick(APPEARANCE_OPTIONS.hairColor),
+      hasBeard: Math.random() < 0.3,
+      skinTone: pick(APPEARANCE_OPTIONS.skinTone),
+      outfit: pick(APPEARANCE_OPTIONS.outfit),
+      outfitColor: pick(APPEARANCE_OPTIONS.outfitColor),
+      eyes: pick(APPEARANCE_OPTIONS.eyes),
+      accessory: accessory === 'Nenhum' ? null : accessory,
+      expression: pick(APPEARANCE_OPTIONS.expression),
+    });
+  };
 
   const handleSubmit = () => {
     const trimmed = name.trim();
@@ -44,8 +65,16 @@ export default function CreateCharacter() {
 
   return (
     <ScreenContainer>
+      <View style={styles.preview}>
+        <Avatar appearance={appearance} size={160} equipped={NO_COSMETICS} animated framed />
+        <Text style={styles.previewName}>{name.trim() || '???'}</Text>
+        <Pressable onPress={randomize} hitSlop={8}>
+          <Text style={styles.randomize}>Aleatório</Text>
+        </Pressable>
+      </View>
+
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Nome</Text>
+        <PixelText>Nome</PixelText>
         <TextInput
           value={name}
           onChangeText={(text) => {
@@ -61,7 +90,7 @@ export default function CreateCharacter() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Gênero</Text>
+        <PixelText>Gênero</PixelText>
         <View style={styles.genderRow}>
           {GENDERS.map((g) => (
             <Pressable
@@ -76,7 +105,7 @@ export default function CreateCharacter() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Personalização</Text>
+        <PixelText>Aparência</PixelText>
         <Card style={styles.appearanceCard}>
           <OptionPicker
             label="Cabelo"
@@ -89,6 +118,12 @@ export default function CreateCharacter() {
             options={APPEARANCE_OPTIONS.hairColor}
             value={appearance.hairColor}
             onChange={(v) => updateAppearance('hairColor', v)}
+          />
+          <OptionPicker
+            label="Barba"
+            options={BEARD_OPTIONS}
+            value={appearance.hasBeard ? BEARD_OPTIONS[1] : BEARD_OPTIONS[0]}
+            onChange={(v) => updateAppearance('hasBeard', v === BEARD_OPTIONS[1])}
           />
           <OptionPicker
             label="Tom de pele"
@@ -135,19 +170,29 @@ export default function CreateCharacter() {
 }
 
 const styles = StyleSheet.create({
+  preview: {
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  previewName: {
+    color: colors.gold,
+    fontFamily: pixelFont,
+    fontSize: pixelSize.md,
+  },
+  randomize: {
+    color: colors.accent,
+    fontFamily: pixelFont,
+    fontSize: pixelSize.xs,
+  },
   section: {
     gap: spacing.md,
     marginBottom: spacing.xl,
   },
-  sectionTitle: {
-    color: colors.textPrimary,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
-  },
   input: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -166,7 +211,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border,
     backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
@@ -181,7 +226,7 @@ const styles = StyleSheet.create({
   },
   genderLabelSelected: {
     color: colors.textPrimary,
-    fontWeight: fontWeight.semibold,
+    fontWeight: '600',
   },
   appearanceCard: {
     gap: spacing.lg,

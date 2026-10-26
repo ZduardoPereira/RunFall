@@ -1,16 +1,16 @@
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
-import { Button, Card, MissionTemplateEditor, ScreenContainer } from '@/src/components';
+import { Button, Card, Heading, MissionTemplateEditor, PixelText, ScreenContainer } from '@/src/components';
+import { hpLossFor } from '@/src/constants/hp';
 import { TIER_LABEL } from '@/src/constants/missionPresets';
+import { MISSION_GOLD, missionXpFor } from '@/src/constants/xp';
 import { useCharacterStore } from '@/src/store';
-import { colors, fontSize, fontWeight, spacing } from '@/src/theme';
+import { colors, fontSize, pixelFont, pixelSize, radius, spacing, tierColors } from '@/src/theme';
+import type { Mission } from '@/src/types';
 
 export default function Missions() {
-  const router = useRouter();
   const character = useCharacterStore((s) => s.character);
-  const ensureTodayMissions = useCharacterStore((s) => s.ensureTodayMissions);
   const completeMission = useCharacterStore((s) => s.completeMission);
   const failMission = useCharacterStore((s) => s.failMission);
   const addMissionTemplate = useCharacterStore((s) => s.addMissionTemplate);
@@ -18,72 +18,59 @@ export default function Missions() {
   const removeMissionTemplate = useCharacterStore((s) => s.removeMissionTemplate);
   const [showRoutine, setShowRoutine] = useState(false);
 
-  useEffect(() => {
-    ensureTodayMissions();
-  }, [ensureTodayMissions]);
-
   if (!character) return null;
 
-  const handleFail = (missionId: string) => {
-    const result = failMission(missionId);
-    if (result === 'dead') {
-      router.replace('/death');
+  // Death is handled by the (app) layout, which redirects once the character is gone.
+  const handleFail = (mission: Mission) => {
+    if (mission.tier !== 'death') {
+      failMission(mission.id);
+      return;
     }
+    Alert.alert('Missão de morte', `Falhar "${mission.title}" mata ${character.name} para sempre. Tem certeza?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Falhar', style: 'destructive', onPress: () => failMission(mission.id) },
+    ]);
   };
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Missões de hoje</Text>
-
-      {character.challengeCompleted ? (
-        <Text style={styles.subtitle}>
-          Desafio concluído! Volte ao Dashboard para começar um novo desafio antes de continuar.
-        </Text>
-      ) : (
-        <>
-          <Text style={styles.subtitle}>Complete ou falhe cada missão para ver o efeito em HP e XP.</Text>
-
-          {character.todayMissions.map((mission) => {
-            const resolution = mission.completed ? 'completed' : mission.failed ? 'failed' : null;
-            return (
-              <Card key={mission.id} style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>{mission.title}</Text>
-                  <Text style={[styles.tierBadge, mission.tier === 'death' && styles.tierBadgeDeath]}>
-                    {TIER_LABEL[mission.tier]}
-                  </Text>
-                </View>
-                {mission.description ? <Text style={styles.cardDescription}>{mission.description}</Text> : null}
-
-                {resolution ? (
-                  <Text style={resolution === 'completed' ? styles.resolvedOk : styles.resolvedFail}>
-                    {resolution === 'completed' ? 'Concluída' : 'Falhou'}
-                  </Text>
-                ) : (
-                  <View style={styles.actions}>
-                    <Button label="Concluir" onPress={() => completeMission(mission.id)} />
-                    <Button label="Falhar" variant="danger" onPress={() => handleFail(mission.id)} />
-                  </View>
-                )}
-              </Card>
-            );
-          })}
-
-          {character.todayMissions.length === 0 ? (
-            <Text style={styles.subtitle}>Nenhuma missão na sua rotina ainda. Adicione uma abaixo.</Text>
-          ) : null}
-        </>
-      )}
-
-      <Button
-        label={showRoutine ? 'Ocultar minha rotina' : 'Minha rotina'}
-        variant="secondary"
-        onPress={() => setShowRoutine((v) => !v)}
+      <Heading
+        title="Missões de hoje"
+        subtitle={
+          character.challengeCompleted
+            ? 'Desafio concluído! Volte ao início para começar um novo desafio.'
+            : 'Conclua cada missão até a meia-noite. O que ficar pendente conta como falha.'
+        }
       />
+
+      {!character.challengeCompleted
+        ? character.todayMissions.map((mission) => (
+            <MissionCard
+              key={mission.id}
+              mission={mission}
+              xp={missionXpFor(mission.tier, character.difficultyId)}
+              penalty={mission.tier === 'death' ? 'MORTE' : `-${hpLossFor(mission.tier, character.difficultyId)} HP`}
+              onComplete={() => completeMission(mission.id)}
+              onFail={() => handleFail(mission)}
+            />
+          ))
+        : null}
+
+      {!character.challengeCompleted && character.todayMissions.length === 0 ? (
+        <Text style={styles.note}>Nenhuma missão hoje. Adicione missões à sua rotina abaixo; elas valem a partir de amanhã.</Text>
+      ) : null}
+
+      <View style={styles.routineToggle}>
+        <Button
+          label={showRoutine ? 'Ocultar rotina' : 'Editar rotina'}
+          variant="secondary"
+          onPress={() => setShowRoutine((v) => !v)}
+        />
+      </View>
 
       {showRoutine ? (
         <View style={styles.routineSection}>
-          <Text style={styles.sectionTitle}>Minha rotina</Text>
+          <PixelText>Minha rotina</PixelText>
           <Text style={styles.note}>Toque numa missão para editar. Mudanças valem a partir de amanhã.</Text>
           <MissionTemplateEditor
             templates={character.missionTemplates}
@@ -97,70 +84,117 @@ export default function Missions() {
   );
 }
 
+interface MissionCardProps {
+  mission: Mission;
+  xp: number;
+  penalty: string;
+  onComplete: () => void;
+  onFail: () => void;
+}
+
+function MissionCard({ mission, xp, penalty, onComplete, onFail }: MissionCardProps) {
+  const tierColor = tierColors[mission.tier];
+  const resolved = mission.completed || mission.failed;
+
+  return (
+    <Card style={[styles.card, { borderLeftColor: tierColor }, resolved && styles.cardResolved]}>
+      <View style={styles.cardHeader}>
+        <Text style={[styles.cardTitle, mission.completed && styles.titleDone]}>{mission.title}</Text>
+        <Text style={[styles.tier, { color: tierColor }]}>{TIER_LABEL[mission.tier]}</Text>
+      </View>
+      {mission.description ? <Text style={styles.description}>{mission.description}</Text> : null}
+
+      <View style={styles.chips}>
+        <Chip text={`+${xp} XP`} color={colors.xp} />
+        <Chip text={`+${MISSION_GOLD[mission.tier]} ouro`} color={colors.gold} />
+        <Chip text={penalty} color={colors.danger} />
+      </View>
+
+      {resolved ? (
+        <PixelText style={{ color: mission.completed ? colors.success : colors.danger }}>
+          {mission.completed ? 'Concluída' : 'Falhou'}
+        </PixelText>
+      ) : (
+        <View style={styles.actions}>
+          <Button label="Concluir" variant="success" compact style={styles.action} onPress={onComplete} />
+          <Button label="Falhar" variant="danger" compact style={styles.action} onPress={onFail} />
+        </View>
+      )}
+    </Card>
+  );
+}
+
+function Chip({ text, color }: { text: string; color: string }) {
+  return (
+    <View style={[styles.chip, { borderColor: color }]}>
+      <Text style={[styles.chipText, { color }]}>{text}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  title: {
-    color: colors.textPrimary,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    marginBottom: spacing.xl,
-  },
   card: {
+    borderLeftWidth: 6,
     marginBottom: spacing.md,
+  },
+  cardResolved: {
+    opacity: 0.6,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.sm,
   },
   cardTitle: {
     color: colors.textPrimary,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontWeight: '600',
+    flexShrink: 1,
   },
-  cardDescription: {
+  titleDone: {
+    textDecorationLine: 'line-through',
+  },
+  tier: {
+    fontFamily: pixelFont,
+    fontSize: pixelSize.xs,
+  },
+  description: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
   },
-  tierBadge: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-    textTransform: 'uppercase',
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
   },
-  tierBadgeDeath: {
-    color: colors.danger,
-    fontWeight: fontWeight.bold,
+  chip: {
+    borderWidth: 1,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.xs + 2,
+    paddingVertical: 3,
+  },
+  chipText: {
+    fontFamily: pixelFont,
+    fontSize: pixelSize.xs,
   },
   actions: {
     flexDirection: 'row',
     gap: spacing.sm,
   },
-  resolvedOk: {
-    color: colors.success,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
-  resolvedFail: {
-    color: colors.danger,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
-  routineSection: {
-    marginTop: spacing.xl,
-  },
-  sectionTitle: {
-    color: colors.textPrimary,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-    marginBottom: spacing.xs,
+  action: {
+    flex: 1,
   },
   note: {
     color: colors.textMuted,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     marginBottom: spacing.md,
+  },
+  routineToggle: {
+    marginTop: spacing.md,
+  },
+  routineSection: {
+    marginTop: spacing.xl,
+    gap: spacing.sm,
   },
 });

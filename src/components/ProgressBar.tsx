@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, fontSize, radius, spacing } from '@/src/theme';
+import { colors, pixelFont, pixelSize, radius, spacing } from '@/src/theme';
 
 interface ProgressBarProps {
   label?: string;
@@ -16,14 +16,16 @@ export function ProgressBar({ label, value, max, color = colors.accent }: Progre
     <View style={styles.wrapper}>
       {label ? (
         <View style={styles.labelRow}>
-          <Text style={styles.label}>{label}</Text>
+          <Text style={[styles.label, { color }]}>{label}</Text>
           <Text style={styles.value}>
             {Math.round(value)}/{Math.round(max)}
           </Text>
         </View>
       ) : null}
       <View style={styles.track}>
-        <View style={[styles.fill, { width: `${pct * 100}%`, backgroundColor: color }]} />
+        <View style={[styles.fill, { width: `${pct * 100}%`, backgroundColor: color }]}>
+          <View style={styles.shine} />
+        </View>
       </View>
     </View>
   );
@@ -31,28 +33,35 @@ export function ProgressBar({ label, value, max, color = colors.accent }: Progre
 
 const styles = StyleSheet.create({
   wrapper: {
-    gap: spacing.xs,
+    gap: spacing.xs + 2,
   },
   labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   label: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
+    fontFamily: pixelFont,
+    fontSize: pixelSize.xs,
   },
   value: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    fontFamily: pixelFont,
+    fontSize: pixelSize.xs,
   },
   track: {
-    height: 8,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceAlt,
+    height: 14,
+    borderRadius: radius.sm,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
-    borderRadius: radius.full,
+  },
+  shine: {
+    height: 3,
+    backgroundColor: 'rgba(255,255,255,0.3)',
   },
 });

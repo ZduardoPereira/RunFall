@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Card, ScreenContainer } from '@/src/components';
+import { Heading, ScreenContainer } from '@/src/components';
 import { useCharacterStore } from '@/src/store';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/src/theme';
+import { colors, fontSize, pixelFont, pixelSize, radius, spacing } from '@/src/theme';
 
 function hexToRgb(hex: string) {
   const value = hex.replace('#', '');
@@ -29,18 +29,18 @@ export default function CalendarScreen() {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Calendário</Text>
-      <Card style={styles.summaryCard}>
-        <Text style={styles.stat}>{character.daysSurvived} dias sobrevividos</Text>
-        <Text style={styles.stat}>Sequência atual: {character.streak}</Text>
-      </Card>
+      <Heading
+        title="Calendário"
+        subtitle={`${character.daysSurvived} dias sobrevividos · sequência ${character.streak} (recorde ${character.bestStreak})`}
+      />
 
       {character.dayHistory.length === 0 ? (
-        <Text style={styles.note}>Nenhum dia registrado ainda. Complete um dia para ver o calendário.</Text>
+        <Text style={styles.note}>Nenhum dia encerrado ainda. Os dias fecham sozinhos à meia-noite.</Text>
       ) : (
         <View style={styles.grid}>
           {character.dayHistory.map((day, index) => {
-            const badness = character.maxHp > 0 ? day.hpLoss / character.maxHp : 0;
+            // Any failure tints the day; heavier HP loss pushes it further to red.
+            const badness = day.perfect ? 0 : 0.35 + (character.maxHp > 0 ? day.hpLoss / character.maxHp : 0);
             const color = lerpColor(colors.success, colors.danger, badness);
             return (
               <View key={day.date + index} style={[styles.day, { backgroundColor: color }]}>
@@ -62,19 +62,6 @@ export default function CalendarScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    color: colors.textPrimary,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    marginBottom: spacing.xl,
-  },
-  summaryCard: {
-    marginBottom: spacing.xl,
-  },
-  stat: {
-    color: colors.textPrimary,
-    fontSize: fontSize.md,
-  },
   note: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
@@ -87,14 +74,16 @@ const styles = StyleSheet.create({
   day: {
     width: 40,
     height: 40,
-    borderRadius: radius.md,
+    borderRadius: radius.sm,
+    borderBottomWidth: 4,
+    borderBottomColor: 'rgba(0,0,0,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayLabel: {
     color: colors.background,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
+    fontFamily: pixelFont,
+    fontSize: pixelSize.xs,
   },
   legend: {
     flexDirection: 'row',

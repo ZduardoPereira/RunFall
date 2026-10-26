@@ -1,8 +1,11 @@
+import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Card, ScreenContainer } from '@/src/components';
-import { useCharacterStore } from '@/src/store';
-import { colors, fontSize, fontWeight, spacing } from '@/src/theme';
+import { Avatar, Button, Card, GoldBadge, PixelText, ScreenContainer } from '@/src/components';
+import { COSMETICS, SLOT_LABEL } from '@/src/constants/cosmetics';
+import { useCharacterStore, useCosmeticStore } from '@/src/store';
+import { colors, fontSize, pixelFont, pixelSize, spacing } from '@/src/theme';
+import type { CosmeticSlot } from '@/src/types';
 
 const GENDER_LABEL: Record<string, string> = {
   male: 'Masculino',
@@ -10,49 +13,83 @@ const GENDER_LABEL: Record<string, string> = {
   unspecified: 'Não informado',
 };
 
+const SLOTS: CosmeticSlot[] = ['hat', 'cape', 'background'];
+
 export default function CharacterScreen() {
+  const router = useRouter();
   const character = useCharacterStore((s) => s.character);
+  const equipped = useCosmeticStore((s) => s.equipped);
   if (!character) return null;
 
+  const { appearance } = character;
   const rows: [string, string][] = [
-    ['Ouro', String(character.gold)],
-    ['Pontos de atributo', String(character.attributePoints)],
     ['Gênero', GENDER_LABEL[character.gender]],
-    ['Cabelo', character.appearance.hairStyle],
-    ['Cor do cabelo', character.appearance.hairColor],
-    ['Tom de pele', character.appearance.skinTone],
-    ['Roupa', character.appearance.outfit],
-    ['Cor da roupa', character.appearance.outfitColor],
-    ['Olhos', character.appearance.eyes],
-    ['Acessório', character.appearance.accessory ?? 'Nenhum'],
-    ['Expressão', character.appearance.expression],
+    ['Cabelo', `${appearance.hairStyle} · ${appearance.hairColor}`],
+    ['Barba', appearance.hasBeard ? 'Sim' : 'Não'],
+    ['Tom de pele', appearance.skinTone],
+    ['Roupa', `${appearance.outfit} · ${appearance.outfitColor}`],
+    ['Olhos', appearance.eyes],
+    ['Acessório', appearance.accessory ?? 'Nenhum'],
+    ['Expressão', appearance.expression],
   ];
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>{character.name}</Text>
+      <View style={styles.hero}>
+        <Avatar appearance={appearance} size={192} animated framed />
+        <Text style={styles.name}>{character.name}</Text>
+        <Text style={styles.meta}>
+          Nível {character.level} · {character.daysSurvived} dias vivo
+        </Text>
+        <GoldBadge amount={character.gold} />
+      </View>
+
       <Card style={styles.card}>
+        <PixelText>Equipado</PixelText>
+        {SLOTS.map((slot) => {
+          const item = COSMETICS.find((c) => c.id === equipped[slot]);
+          return <Row key={slot} label={SLOT_LABEL[slot]} value={item?.name ?? '—'} />;
+        })}
+        <Button label="Ir para a loja" variant="gold" onPress={() => router.push('/(app)/shop')} />
+      </Card>
+
+      <Card style={styles.card}>
+        <PixelText>Aparência</PixelText>
         {rows.map(([label, value]) => (
-          <View key={label} style={styles.row}>
-            <Text style={styles.rowLabel}>{label}</Text>
-            <Text style={styles.rowValue}>{value}</Text>
-          </View>
+          <Row key={label} label={label} value={value} />
         ))}
       </Card>
-      <Text style={styles.note}>A ilustração visual do personagem é um próximo passo.</Text>
     </ScreenContainer>
   );
 }
 
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.row}>
+      <Text style={styles.rowLabel}>{label}</Text>
+      <Text style={styles.rowValue}>{value}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  title: {
-    color: colors.textPrimary,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
+  hero: {
+    alignItems: 'center',
+    gap: spacing.md,
     marginBottom: spacing.xl,
+  },
+  name: {
+    color: colors.textPrimary,
+    fontFamily: pixelFont,
+    fontSize: pixelSize.lg,
+  },
+  meta: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
   },
   card: {
     gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
   row: {
     flexDirection: 'row',
@@ -65,11 +102,6 @@ const styles = StyleSheet.create({
   rowValue: {
     color: colors.textPrimary,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
-  note: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-    marginTop: spacing.xl,
+    fontWeight: '500',
   },
 });

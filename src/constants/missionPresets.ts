@@ -1,5 +1,6 @@
 import { DIFFICULTIES } from '@/src/constants/difficulties';
 import type { DifficultyId, MissionTemplate, MissionTier } from '@/src/types';
+import { makeId } from '@/src/utils/date';
 
 export const TIER_LABEL: Record<MissionTier, string> = {
   simple: 'Simples',
@@ -7,10 +8,6 @@ export const TIER_LABEL: Record<MissionTier, string> = {
   hard: 'Difícil',
   death: 'Morte',
 };
-
-function makeId() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
 
 const MISSION_POOL: Record<MissionTier, string[]> = {
   simple: ['Beber água', 'Alongamento', 'Organizar quarto', 'Meditação', 'Responder diário'],

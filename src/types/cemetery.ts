@@ -1,3 +1,4 @@
+import type { CharacterAppearance } from './character';
 import type { DifficultyId } from './difficulty';
 
 export interface CemeteryEntry {
@@ -12,4 +13,6 @@ export interface CemeteryEntry {
   challengeId: string;
   missionsCompleted: number;
   missionsFailed: number;
+  /** Missing on entries saved before sprites existed. */
+  appearance?: CharacterAppearance;
 }

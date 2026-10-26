@@ -7,5 +7,4 @@ export interface DifficultyConfig {
   hpLossMultiplier: number;
   xpMultiplier: number;
   missionCountMultiplier: number;
-  instantDeathOnFailedDeathMission: boolean;
 }

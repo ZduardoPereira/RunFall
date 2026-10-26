@@ -1,21 +1,22 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { Card, ScreenContainer } from '@/src/components';
-import { colors, fontSize, fontWeight, spacing } from '@/src/theme';
+import { ChoiceCard, Heading, ScreenContainer } from '@/src/components';
+import { colors } from '@/src/theme';
 
 const MODES = [
   {
     id: 'preset',
-    title: 'Desafios pré-definidos',
+    title: 'Rotina pronta',
     description: 'Escolha um nível de dificuldade e receba uma rotina de missões pronta.',
     href: '/select-difficulty' as const,
+    accent: colors.accent,
   },
   {
     id: 'manual',
     title: 'Criar manualmente',
-    description: 'Monte sua própria rotina, escolhendo o título e o nível de cada missão.',
+    description: 'Monte sua própria rotina, escolhendo o título e o nível de cada missão. Usa a dificuldade Média.',
     href: '/manual-missions' as const,
+    accent: colors.gold,
   },
 ];
 
@@ -25,46 +26,20 @@ export default function SelectMode() {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Como você quer montar sua rotina?</Text>
-      <Text style={styles.subtitle}>Você pode usar uma rotina pré-definida por dificuldade ou criar a sua do zero.</Text>
+      <Heading
+        title="Sua rotina"
+        subtitle="Use uma rotina pré-definida por dificuldade ou crie a sua do zero."
+      />
 
       {MODES.map((mode) => (
-        <Pressable
+        <ChoiceCard
           key={mode.id}
+          title={mode.title}
+          description={mode.description}
+          accent={mode.accent}
           onPress={() => router.push({ pathname: mode.href, params: { challengeId } })}
-        >
-          <Card style={styles.card}>
-            <Text style={styles.cardTitle}>{mode.title}</Text>
-            <Text style={styles.cardDescription}>{mode.description}</Text>
-          </Card>
-        </Pressable>
+        />
       ))}
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  title: {
-    color: colors.textPrimary,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    marginBottom: spacing.xl,
-  },
-  card: {
-    marginBottom: spacing.md,
-  },
-  cardTitle: {
-    color: colors.textPrimary,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-  },
-  cardDescription: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-  },
-});
